@@ -1,15 +1,14 @@
 import pandas as pd
 import re
 import requests
-from queue import Queue
 
 
 _domen = input('Type a domen:') or 'https://habrahabr.ru'
 settings = {
     'domen': _domen,
-    'size': 250,
+    'size': 15,
     'regexp': r'href="(?:%s([\w/]+)|/)"' % _domen,
-    'number_iteration': 50,
+    'number_iteration': 35,
     'dampening_factor': 0.85,
 }
 
@@ -24,22 +23,42 @@ def find_urls(url):
     return set(urls)
 
 
+def generate_binding_matrix(adjacency_matrix):
+    """ 
+    {'/': {'users': 1, '/': 1}, 'q': {'/': 1}}
+    """
+    urls = adjacency_matrix.keys()
+    url_ids = {url: position for position, url in enumerate(urls)}
+    res = []
+    for url in urls:
+        res.append([])
+        for link in adjacency_matrix[url]:
+            if link in url_ids.keys():
+                res[-1].append(url_ids[link])
+    with open(u'Степенной метод %s.txt' % settings['domen'].replace('https://', ''), 'w') as f:
+        f.write('\n'.join("%d. %s" % (pos, url) for url, pos in sorted(url_ids.items(), key=lambda e: e[1])))
+        f.write('\n\n')
+        f.write('\n'.join(("%s: " % url) + str(values) for url, values in zip(urls, res)))
+
+
 def generate_adjacency_matrix():
-    pages_to_parse = Queue()
+    pages_to_parse = []
     pages_passed = set()
     adjacency_matrix = {}
-    pages_to_parse.put('/')
+    pages_to_parse.append('/')
     print('Pages passed: ')
-    while len(pages_passed) != settings['size']:
+    while len(pages_passed) != settings['size'] and len(pages_to_parse) != 0:
         print(len(pages_passed))
-        current_url = pages_to_parse.get()
+        current_url = pages_to_parse.pop(0)
         adjacency_matrix[current_url] = {}
         urls = find_urls(current_url)
         for url in urls:
             adjacency_matrix[current_url][url] = 1
-            if url not in pages_passed:
-                pages_to_parse.put(url)
+            if url not in pages_passed and url not in pages_to_parse:
+                pages_to_parse.append(url)
         pages_passed.add(current_url)
+    # binding matrix (optionally for demo)
+    generate_binding_matrix(adjacency_matrix)
     # generate pandas.DataFrame from dict of dicts
     index = pd.Index(sorted(list(adjacency_matrix.keys())))
     adjacency_matrix = pd.DataFrame(adjacency_matrix, index=index, columns=index).fillna(0).astype(int)
@@ -64,8 +83,11 @@ def pagerank(matrix):
         for page_from in input_values:
             for page_to in matrix[page_from][matrix[page_from] == 1].index:
                 sum_values[page_to] += input_values[page_from] * D / count_links[page_from]
-        input_values = sum_values
-        sum_values = init_sum_values
+        sum_values = {key: value+(1-D) for key, value in sum_values.items()}
+        # normalization value/max {0, 1}
+        maximum = max(sum_values.values())
+        sum_values = {key: value/maximum for key, value in sum_values.items()}
+        input_values = sum_values.copy()
     return input_values
 
 
