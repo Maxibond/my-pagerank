@@ -6,7 +6,7 @@ import requests
 _domen = input('Type a domen:') or 'https://habrahabr.ru'
 settings = {
     'domen': _domen,
-    'size': 15,
+    'size': 250,
     'regexp': r'href="(?:%s([\w/]+)|/)"' % _domen,
     'number_iteration': 35,
     'dampening_factor': 0.85,
@@ -24,9 +24,6 @@ def find_urls(url):
 
 
 def generate_binding_matrix(adjacency_matrix):
-    """ 
-    {'/': {'users': 1, '/': 1}, 'q': {'/': 1}}
-    """
     urls = adjacency_matrix.keys()
     url_ids = {url: position for position, url in enumerate(urls)}
     res = []
