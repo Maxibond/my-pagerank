@@ -4,7 +4,7 @@ import requests
 
 
 settings = {
-    'size': 100,  # количество страниц
+    'size': 200,  # количество страниц
     'number_iteration': 10,  # количество итераций для pagerank
     'dampening_factor': 0.85,
 }
@@ -109,7 +109,7 @@ def generate_file_rating(pagerank_rating):
 def main(size=settings['size']):
     domen = input('Type a domen (press Enter for: "https://habrahabr.ru"') or 'https://habrahabr.ru'  # спрашиваем домен, по умолчанию хабр
     settings['domen'] = domen
-    settings['regexp'] = r'href="(?:%s([\w/]+)|/)"' % domen
+    settings['regexp'] = r'href="(?:([\w/]+)|/)"'
     adjacency_matrix = generate_adjacency_matrix(size)  # матрица смежности
     generate_csv_matrix(adjacency_matrix)  # выводим её в файл
     pagerank_rating = pagerank(adjacency_matrix)  # pagerank для матрицы
